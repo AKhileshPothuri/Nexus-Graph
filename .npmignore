@@ -1,0 +1,7 @@
+src/
+Build Docs/
+SETUP.md
+tsconfig.json
+*.jsonl
+.nexus/
+node_modules/
