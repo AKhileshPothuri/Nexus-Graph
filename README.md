@@ -1,23 +1,35 @@
-# Nexus
+# Nexus Graph
 
-**Code graph context engine for AI coding assistants.**
+### The Intelligence Map of your Codebase.
 
-Nexus indexes your codebase as a directed symbol graph (functions, classes, imports, call edges) stored in an embedded SQLite database. It exposes the graph via an MCP server so AI assistants like Claude Code fetch only the *relevant* code for each query — instead of reading whole files — cutting token usage dramatically.
+Nexus is a local-first retrieval engine that parses your codebase into a directed symbol graph. It serves high-precision, token-efficient context to AI assistants via the **Model Context Protocol (MCP)**.
 
+[![npm version](https://img.shields.io/npm/v/@costline/nexus-graph.svg)](https://www.npmjs.com/package/@costline/nexus-graph)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![NPM Downloads](https://img.shields.io/npm/dm/@costline/nexus-graph.svg)](https://www.npmjs.com/package/@costline/nexus-graph)
+
+---
+
+Nexus-Graph is optimized for immediate use with **Claude Code**, **Cursor**, and **Gemini**.
+
+```bash
+# 1. Install globally
+npm install -g @costline/nexus-graph
+
+# 2. Index your project
+nexus-graph index --project .
+
+# 3. Start the MCP Server
+nexus-graph server --project .
 ```
-Your codebase → Nexus indexer → SQLite symbol graph
-                                      ↓
-              Claude Code ← MCP server (stdio or HTTP)
-                    ↓
-           get_context_for_query("how does auth work?")
-                    ↓
-           Ranked, budget-constrained code snippets (≤8 000 tokens)
-```
+
+---
+
 ## Screenshots
 
 | Interactive Graph UI |
 |---------------------|
-| ![Nexus Graph UI](docs/images/nexus_graph.png) |
+| ![Nexus-Graph Interactive Simulation](assets/nexus_graph.png) |
 
 ---
 
@@ -45,7 +57,7 @@ Nexus Graph is designed for speed and efficiency, even on large codebases:
 ## Installation
 
 ```bash
-npm install -g nexus-graph
+npm install -g @costline/nexus-graph
 ```
 
 Or run without installing:
@@ -92,54 +104,23 @@ use get_context_for_query for "how does the auth middleware work?"
 
 ## CLI Reference
 
-### `nexus-mcp` — stdio MCP server
-
-```
-nexus-mcp [options]
-
-Options:
-  --project, -p <path>   Project root to index (default: cwd)
-  --db <path>            SQLite db path (default: <project>/.nexus/graph.db)
-  --watch, -w            Watch for file changes and re-index incrementally
+### `nexus-graph index`
+Index all symbols and build the initial code graph.
+```bash
+nexus-graph index --project /path/to/project
 ```
 
-### `nexus-mcp-http` — HTTP MCP server
-
-```
-nexus-mcp-http [options]
-
-Options:
-  --project, -p <path>   Project root to index (default: cwd)
-  --db <path>            SQLite db path (default: <project>/.nexus/graph.db)
-  --port <n>             Port to listen on (default: 3333)
-  --watch, -w            Watch for file changes
+### `nexus-graph server`
+Start the MCP server (Stdio by default).
+```bash
+nexus-graph server --project /path/to/project --port 3000
 ```
 
-Connect from Claude Code:
-
-```jsonc
-{
-  "mcpServers": {
-    "nexus": {
-      "type": "http",
-      "url": "http://localhost:3333/mcp"
-    }
-  }
-}
+### `nexus-graph viz`
+Launch the interactive web-based graph visualizer.
+```bash
+nexus-graph viz --project /path/to/project
 ```
-
-### `nexus-viz` — Interactive graph visualization
-
-```
-nexus-viz [options]
-
-Options:
-  --project, -p <path>   Project root (for relative file paths)
-  --db <path>            SQLite db path (default: <project>/.nexus/graph.db)
-  --out, -o <path>       Output HTML path (default: /tmp/nexus-graph.html)
-```
-
-Opens an interactive neon-themed graph in your browser. Directory-level overview with drill-down into file and symbol clusters.
 
 ---
 
@@ -204,22 +185,9 @@ console.log(formatContextResult(context));
 
 ---
 
-## How It Works
-
-### Indexer
-
-1. Walks the project with `glob`, skipping `node_modules`, `.venv`, `dist`, etc.
-2. Parses each file with **tree-sitter** (Python / TypeScript / JavaScript grammars)
-3. Extracts symbols (name, type, signature, docstring, start/end line, body hash)
-4. Resolves cross-file imports and writes `imports`/`calls`/`extends` edges
-5. Stores everything in SQLite with an FTS5 virtual table for fast search
-
-### Context Engine
-
 1. **Anchor finding**: FTS5 full-phrase → word-by-word → file-path substring fallback
 2. **BFS traversal**: `k`-step breadth-first from anchor symbols across import edges
-3. **Scoring**: `0.4 × recency + 0.3 × proximity + 0.2 × edit_frequency + 0.1 × semantic_sim`
-4. **Budget manager**: greedy fill (full bodies) → definition-only → drop leaf nodes until within token budget
+3. **Budget manager**: greedy fill (full bodies) → definition-only → drop leaf nodes until within token budget
 
 ### Storage
 

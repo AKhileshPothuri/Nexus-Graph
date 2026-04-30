@@ -17,56 +17,27 @@ import {
   ToolDeps,
 } from './tools';
 
-// ── CLI arg parsing ───────────────────────────────────────────────────────────
+export async function startMCPServer(projectRootPath: string = process.cwd(), port: number = 3000) {
+  const resolvedRoot = path.resolve(projectRootPath);
+  const dbPath = path.join(resolvedRoot, '.nexus', 'graph.db');
 
-function parseArgs(): { projectRoot: string; dbPath: string; watch: boolean } {
-  const args = process.argv.slice(2);
-  let projectRoot = process.cwd();
-  let dbPath: string | null = null;
-  let watch = false;
-
-  for (let i = 0; i < args.length; i++) {
-    if ((args[i] === '--project' || args[i] === '-p') && args[i + 1]) {
-      projectRoot = path.resolve(args[++i]);
-    } else if ((args[i] === '--db') && args[i + 1]) {
-      dbPath = path.resolve(args[++i]);
-    } else if (args[i] === '--watch' || args[i] === '-w') {
-      watch = true;
-    }
-  }
-
-  if (!fs.existsSync(projectRoot)) {
-    console.error(`[nexus] project root not found: ${projectRoot}`);
+  if (!fs.existsSync(resolvedRoot)) {
+    console.error(`[nexus] project root not found: ${resolvedRoot}`);
     process.exit(1);
   }
-
-  dbPath = dbPath ?? path.join(projectRoot, '.nexus', 'graph.db');
-  return { projectRoot, dbPath, watch };
-}
-
-// ── Main ──────────────────────────────────────────────────────────────────────
-
-async function main() {
-  const { projectRoot, dbPath, watch } = parseArgs();
 
   const db = new NexusDB(dbPath);
   const session = createSession();
 
   // Index the project on startup
-  indexProject(projectRoot, db);
+  indexProject(resolvedRoot, db);
 
-  // Optionally watch for file changes
-  if (watch) {
-    watchProject(projectRoot, db);
-    console.error(`[nexus] watching ${projectRoot} for changes`);
-  }
-
-  const deps: ToolDeps = { db, projectRoot, session };
+  const deps: ToolDeps = { db, projectRoot: resolvedRoot, session };
 
   // ── MCP Server setup ────────────────────────────────────────────────────────
 
   const server = new McpServer({
-    name: 'nexus',
+    name: 'nexus-graph',
     version: '0.1.0',
   });
 
@@ -85,14 +56,14 @@ async function main() {
 
   server.tool(
     'get_context_for_query',
-    'Given a natural-language query about the codebase, returns the most relevant code context within a token budget. Use this before asking questions about code to avoid reading entire files.',
+    'Given a natural-language query about the codebase, returns the most relevant code context within a token budget.',
     {
-      query: z.string().describe('What you are looking for — e.g. "checkout flow", "user authentication", "database connection"'),
+      query: z.string().describe('What you are looking for — e.g. "checkout flow", "user authentication"'),
       budget_tokens: z.number().int().min(500).max(32000).optional().describe('Max tokens to return (default 8000)'),
       k_steps: z.number().int().min(1).max(5).optional().describe('Graph traversal depth (default 3)'),
     },
     async ({ query, budget_tokens, k_steps }) => {
-      recordFileAccess(session, query); // track query as recency signal
+      recordFileAccess(session, query);
       const text = getContextForQuery(deps, query, budget_tokens, k_steps ?? 3);
       return { content: [{ type: 'text', text }] };
     },
@@ -100,7 +71,7 @@ async function main() {
 
   server.tool(
     'get_symbol_context',
-    'Get code context centered on a specific symbol name, traversing its dependencies and callers.',
+    'Get code context centered on a specific symbol name.',
     {
       symbol_name: z.string().describe('Exact or partial symbol name'),
       k_steps: z.number().int().min(1).max(5).optional().describe('Graph traversal depth (default 3)'),
@@ -114,7 +85,7 @@ async function main() {
 
   server.tool(
     'apply_edit_and_update_graph',
-    'Re-index a file after it has been edited, keeping the code graph up to date.',
+    'Re-index a file after it has been edited.',
     {
       file_path: z.string().describe('Absolute path to the modified file'),
     },
@@ -135,14 +106,17 @@ async function main() {
     },
   );
 
-  // ── Start transport ─────────────────────────────────────────────────────────
-
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('[nexus] MCP server running on stdio');
 }
 
-main().catch(err => {
-  console.error('[nexus] fatal:', err);
-  process.exit(1);
-});
+// ── Legacy support for direct execution ──────────────────────────────────────
+if (require.main === module) {
+  const args = process.argv.slice(2);
+  let p = process.cwd();
+  for (let i = 0; i < args.length; i++) {
+    if ((args[i] === '--project' || args[i] === '-p') && args[i+1]) p = args[++i];
+  }
+  startMCPServer(p).catch(console.error);
+}

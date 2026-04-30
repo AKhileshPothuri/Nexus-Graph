@@ -223,3 +223,8 @@ node_modules/
 dist/
 build/
 *.log
+# Nexus Graph specific
+.nexus/
+stats.json
+*.db
+*.html

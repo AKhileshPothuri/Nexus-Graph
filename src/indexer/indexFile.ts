@@ -1,6 +1,7 @@
 import { NexusDB, Symbol } from './db';
 import { parseFile } from './parser';
 import { buildImportEdges } from './resolver';
+import * as path from 'path';
 
 const IGNORE_PATTERNS = [
   '**/__pycache__/**',
@@ -76,4 +77,14 @@ export function indexProject(projectRoot: string, db: NexusDB): void {
 
   const stats = db.getStats();
   console.error(`[nexus] index complete: ${stats.symbols} symbols, ${stats.edges} edges, ${stats.files} files`);
+}
+
+/**
+ * Entry point for CLI to run the indexer.
+ */
+export async function runIndexer(projectRoot: string): Promise<void> {
+  const resolvedRoot = path.resolve(projectRoot);
+  const dbPath = path.join(resolvedRoot, '.nexus', 'graph.db');
+  const db = new NexusDB(dbPath);
+  indexProject(resolvedRoot, db);
 }

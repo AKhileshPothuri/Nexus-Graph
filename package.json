@@ -1,5 +1,5 @@
 {
-  "name": "nexus-graph",
+  "name": "@costline/nexus-graph",
   "version": "0.1.0",
   "description": "Code graph context engine for AI coding assistants — indexes Python/TS/JS as a symbol graph and serves token-budgeted context via MCP",
   "main": "dist/mcp/server.js",
@@ -12,9 +12,7 @@
     "./context/budget": "./dist/context/budget.js"
   },
   "bin": {
-    "nexus-mcp": "dist/mcp/server.js",
-    "nexus-mcp-http": "dist/mcp/http-server.js",
-    "nexus-viz": "dist/viz/cli.js"
+    "nexus-graph": "dist/cli/main.js"
   },
   "files": [
     "dist",
@@ -24,9 +22,10 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "dev": "ts-node src/mcp/server.ts",
-    "http": "ts-node src/mcp/http-server.ts",
-    "viz": "ts-node src/viz/cli.ts"
+    "dev": "ts-node src/cli/main.ts",
+    "index": "ts-node src/cli/main.ts index",
+    "server": "ts-node src/cli/main.ts server",
+    "viz": "ts-node src/cli/main.ts viz"
   },
   "keywords": [
     "mcp",
@@ -60,6 +59,7 @@
     "@types/express": "^5.0.6",
     "better-sqlite3": "^12.9.0",
     "chokidar": "^5.0.0",
+    "commander": "^14.0.3",
     "express": "^5.2.1",
     "glob": "^13.0.6",
     "tiktoken": "^1.0.22",
