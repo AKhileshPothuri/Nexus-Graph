@@ -17,7 +17,7 @@ Your codebase → Nexus indexer → SQLite symbol graph
 
 | Interactive Graph UI |
 |---------------------|
-| ![Nexus Graph UI](/Users/akhileshpothuri/Documents/GitHub/Nexus-Graph/docs/images/nexus_graph.png) |
+| ![Nexus Graph UI](docs/images/nexus_graph.png) |
 
 ---
 
