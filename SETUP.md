@@ -17,8 +17,8 @@ Add to `~/.claude/settings.json`:
     "nexus": {
       "command": "node",
       "args": [
-        "/Users/pothak3/Documents/Code_Graph/dist/mcp/server.js",
-        "--project", "/path/to/your/python/project",
+        "<nexus-graph-install-dir>/dist/mcp/server.js",
+        "--project", "/path/to/your/project",
         "--watch"
       ]
     }

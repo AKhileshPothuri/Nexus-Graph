@@ -455,7 +455,7 @@ function showDirDetail(dirName){
   EDGES.forEach((e,i)=>{
     if(!allIds.has(e.from)||!allIds.has(e.to))return;
     const sf=byId[e.from];
-    const c=SF[sf?.type]||'#94a3b8';
+    const c=SC[sf?.type]||'#94a3b8';
     const dim=!mainSymIds.has(e.from)||!mainSymIds.has(e.to);
     symEdges.push({id:'se'+i,from:e.from,to:e.to,label:dim?'':e.kind,...slimEdge(c,dim,dim?'':e.kind)});
   });
@@ -553,9 +553,6 @@ function _symSidebar(id){
     <div class="cl">\${inc.map(e=>row(e,'in')).join('')||'<span style="color:var(--muted);font-size:10px">none</span>'}</div>
   \`;
 }
-
-// SF is symbol color lookup (same as SC)
-const SF=SC;
 
 function focusNode(id){
   selId=id;

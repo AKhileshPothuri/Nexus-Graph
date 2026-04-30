@@ -13,6 +13,8 @@ export interface Symbol {
   docstring: string;
   visibility: 'public' | 'private';
   body_hash: string;
+  last_edited?: number;
+  edit_count?: number;
 }
 
 export interface Edge {
@@ -32,7 +34,9 @@ CREATE TABLE IF NOT EXISTS symbols (
   signature   TEXT NOT NULL DEFAULT '',
   docstring   TEXT NOT NULL DEFAULT '',
   visibility  TEXT NOT NULL DEFAULT 'public',
-  body_hash   TEXT NOT NULL DEFAULT ''
+  body_hash   TEXT NOT NULL DEFAULT '',
+  last_edited INTEGER NOT NULL DEFAULT 0,
+  edit_count  INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS edges (
@@ -94,6 +98,14 @@ export class NexusDB {
       // Rebuild FTS index to include the new column
       this.db.exec(`INSERT INTO symbols_fts(symbols_fts) VALUES('rebuild')`);
     }
+    if (!cols.includes('last_edited')) {
+      this.db.exec(`ALTER TABLE symbols ADD COLUMN last_edited INTEGER NOT NULL DEFAULT 0`);
+      this.db.exec(`ALTER TABLE symbols ADD COLUMN edit_count INTEGER NOT NULL DEFAULT 0`);
+    }
+  }
+
+  updateSymbolMetadata(id: string, last_edited: number, edit_count: number): void {
+    this.db.prepare(`UPDATE symbols SET last_edited = ?, edit_count = ? WHERE id = ?`).run(last_edited, edit_count, id);
   }
 
   upsertSymbol(sym: Symbol): void {
@@ -101,8 +113,8 @@ export class NexusDB {
     if (existing?.body_hash === sym.body_hash) return; // unchanged
 
     this.db.prepare(`
-      INSERT INTO symbols (id, symbol_name, symbol_type, file_path, start_line, end_line, signature, docstring, visibility, body_hash)
-      VALUES (@id, @symbol_name, @symbol_type, @file_path, @start_line, @end_line, @signature, @docstring, @visibility, @body_hash)
+      INSERT INTO symbols (id, symbol_name, symbol_type, file_path, start_line, end_line, signature, docstring, visibility, body_hash, last_edited, edit_count)
+      VALUES (@id, @symbol_name, @symbol_type, @file_path, @start_line, @end_line, @signature, @docstring, @visibility, @body_hash, COALESCE(@last_edited, 0), COALESCE(@edit_count, 0))
       ON CONFLICT(id) DO UPDATE SET
         symbol_name = excluded.symbol_name,
         symbol_type = excluded.symbol_type,
@@ -111,8 +123,14 @@ export class NexusDB {
         signature   = excluded.signature,
         docstring   = excluded.docstring,
         visibility  = excluded.visibility,
-        body_hash   = excluded.body_hash
-    `).run(sym);
+        body_hash   = excluded.body_hash,
+        last_edited = excluded.last_edited,
+        edit_count  = excluded.edit_count
+    `).run({
+      ...sym,
+      last_edited: sym.last_edited ?? 0,
+      edit_count: sym.edit_count ?? 0
+    });
   }
 
   upsertSymbols(symbols: Symbol[]): void {

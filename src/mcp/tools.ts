@@ -88,13 +88,22 @@ export function applyEditAndUpdateGraph(
   deps: ToolDeps,
   filePath: string,
 ): object {
+  const oldSymbols = deps.db.getSymbolsByFile(filePath);
+
   deps.db.deleteSymbolsByFile(filePath);
   indexFile(filePath, deps.projectRoot, deps.db, new Map());
 
-  const symbols = deps.db.getSymbolsByFile(filePath);
+  const newSymbols = deps.db.getSymbolsByFile(filePath);
+  for (const newSym of newSymbols) {
+      const old = oldSymbols.find(s => s.symbol_name === newSym.symbol_name);
+      const count = (old?.edit_count || 0) + 1;
+      const lastEdited = Date.now();
+      deps.db.updateSymbolMetadata(newSym.id, lastEdited, count);
+  }
+
   return {
     updated: filePath,
-    symbols_reindexed: symbols.length,
+    symbols_reindexed: newSymbols.length,
   };
 }
 

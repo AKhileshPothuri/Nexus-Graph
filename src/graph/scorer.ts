@@ -58,14 +58,27 @@ export function scoreNodes(
   session: SessionState,
   weights: ScoringWeights = DEFAULT_WEIGHTS,
 ): ScoredNode[] {
-  const maxEdits = Math.max(...Array.from(session.editCounts.values()), 1);
+  const dbMaxEdits = Math.max(...nodes.map(n => n.symbol.edit_count || 0), 0);
+  const sessionMaxEdits = Math.max(...Array.from(session.editCounts.values()), 0);
+  const maxEdits = Math.max(dbMaxEdits, sessionMaxEdits, 1);
 
   return nodes.map(node => {
-    const recency   = recencyScore(session, node.symbol.file_path);
+    let lastAccess = node.symbol.last_edited || session.recentFiles.get(node.symbol.file_path);
+    let recency = 0;
+    if (lastAccess) {
+      const ageMs = Date.now() - lastAccess;
+      const ageMins = ageMs / 60_000;
+      recency = Math.max(0, 1 - ageMins / 60);
+    }
+
     const proximity = proximityScore(node.distance);
-    const editFreq  = editFrequencyScore(session, node.symbol.file_path, maxEdits);
-    // semantic similarity is optional (v1: skip, contribute 0)
-    const semantic  = 0;
+
+    const sessionEdits = session.editCounts.get(node.symbol.file_path) ?? 0;
+    const totalEdits = (node.symbol.edit_count || 0) + sessionEdits;
+    const editFreq = Math.min(totalEdits / maxEdits, 1);
+
+    // semantic similarity approximated via distance if no better metric exists
+    const semantic  = node.distance === 0 ? 1.0 : 0.0;
 
     const score =
       weights.recency       * recency   +
