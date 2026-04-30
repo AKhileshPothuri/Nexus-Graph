@@ -228,3 +228,6 @@ build/
 stats.json
 *.db
 *.html
+
+# Marketing materials
+marketing/

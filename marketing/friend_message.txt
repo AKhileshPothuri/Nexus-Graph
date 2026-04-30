@@ -1,7 +1,0 @@
-Hey guys! Finally launched that AI tool I was working on. I was tired of burning through my API credits because of messy context, so I built something to solve it. 
-
-Basically, it maps your code into a graph so AI understands it better and cheaper. Would mean a ton if you could drop a ⭐ star on the repo for some launch day momentum: 
-
-https://github.com/akhileshpothuri/Nexus-Graph
-
-Appreciate you all! 🙏
