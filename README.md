@@ -235,3 +235,4 @@ CREATE VIRTUAL TABLE symbols_fts USING fts5(
 ## License
 
 MIT
+ 
