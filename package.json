@@ -25,7 +25,10 @@
     "dev": "ts-node src/cli/main.ts",
     "index": "ts-node src/cli/main.ts index",
     "server": "ts-node src/cli/main.ts server",
-    "viz": "ts-node src/cli/main.ts viz"
+    "viz": "ts-node src/cli/main.ts viz",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [
     "mcp",
@@ -39,20 +42,25 @@
     "typescript",
     "javascript"
   ],
-  "author": "",
+  "author": "Akhilesh Pothuri <akhileshpothuri24@gmail.com>",
   "license": "MIT",
   "engines": {
     "node": ">=18"
   },
+  "homepage": "https://github.com/AKhileshPothuri/Nexus-Graph#readme",
+  "bugs": {
+    "url": "https://github.com/AKhileshPothuri/Nexus-Graph/issues"
+  },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/AKhileshPothuri/Nexus-Graph.git"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.6.0",
     "ts-node": "^10.9.2",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^2.1.9"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
