@@ -1,6 +1,6 @@
 {
   "name": "@costline/nexus-graph",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Code graph context engine for AI coding assistants — indexes Python/TS/JS as a symbol graph and serves token-budgeted context via MCP",
   "main": "dist/mcp/server.js",
   "exports": {

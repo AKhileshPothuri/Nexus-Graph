@@ -43,17 +43,25 @@ export function indexProject(projectRoot: string, db: NexusDB): void {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { globSync } = require('glob');
 
+  const allFiles: string[] = globSync('**/*.{py,ts,tsx,js,jsx}', {
+    cwd: projectRoot,
+    absolute: true,
+  });
+
   const files: string[] = globSync('**/*.{py,ts,tsx,js,jsx}', {
     cwd: projectRoot,
     absolute: true,
     ignore: IGNORE_PATTERNS,
   });
 
-  console.error(`[nexus] indexing ${files.length} files (py/ts/js)...`);
+  const skipped = allFiles.length - files.length;
+  const total = files.length;
+  console.error(`[nexus] indexing ${total} files (py/ts/js)...`);
 
   // Phase 1: parse all files, collect symbols
   const allSymbolsByFile = new Map<string, Symbol[]>();
-  for (const f of files) {
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
     try {
       const { symbols } = parseFile(f);
       db.upsertSymbols(symbols);
@@ -61,10 +69,14 @@ export function indexProject(projectRoot: string, db: NexusDB): void {
     } catch (err) {
       console.error(`[nexus] parse error ${f}: ${err}`);
     }
+    if ((i + 1) % 50 === 0 || i + 1 === total) {
+      console.error(`[nexus] parsed ${i + 1}/${total} files...`);
+    }
   }
 
   // Phase 2: resolve import edges now that all symbols are known
-  for (const f of files) {
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
     try {
       const { imports } = parseFile(f);
       const symbols = allSymbolsByFile.get(f) ?? [];
@@ -73,10 +85,13 @@ export function indexProject(projectRoot: string, db: NexusDB): void {
     } catch (err) {
       console.error(`[nexus] edge error ${f}: ${err}`);
     }
+    if ((i + 1) % 50 === 0 || i + 1 === total) {
+      console.error(`[nexus] resolved edges ${i + 1}/${total} files...`);
+    }
   }
 
   const stats = db.getStats();
-  console.error(`[nexus] index complete: ${stats.symbols} symbols, ${stats.edges} edges, ${stats.files} files`);
+  console.error(`[nexus] index complete: ${stats.symbols} symbols, ${stats.edges} edges, ${stats.files} files (${skipped} files skipped)`);
 }
 
 /**
@@ -86,5 +101,9 @@ export async function runIndexer(projectRoot: string): Promise<void> {
   const resolvedRoot = path.resolve(projectRoot);
   const dbPath = path.join(resolvedRoot, '.nexus', 'graph.db');
   const db = new NexusDB(dbPath);
-  indexProject(resolvedRoot, db);
+  try {
+    indexProject(resolvedRoot, db);
+  } finally {
+    db.close();
+  }
 }
